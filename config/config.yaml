@@ -1,0 +1,16 @@
+app:
+  name: ffly-basic
+  mode: development
+  port: 60000
+  jwt_jwt_secret: your-jwt-secret-key
+  jwt_expire: 86400 # 24 hours
+
+mysql:
+  host: localhost
+  port: 3306
+  user: root
+  password: root
+  database: ffly_basic
+  max_idle_conns: 10
+  max_open_conns: 100
+  connection_max_lifetime: 60
