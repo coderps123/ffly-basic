@@ -41,40 +41,53 @@ func (service *UserService) GetUserByID(id uint) (*model.User, error) {
 
 // CreateUser 创建用户
 func (service *UserService) CreateUser(userCreateRequest *model.UserCreateRequest) error {
+	// 开启事务
+	tx := mysql.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback() // 回滚事务
+		}
+	}()
+
 	// 校验手机号是否合规
 	if userCreateRequest.Phone != nil && !utils.IsPhone(*userCreateRequest.Phone) {
+		tx.Rollback() // 回滚事务
 		return fmt.Errorf("手机号不合规")
 	}
 
 	// 加密密码
 	if userCreateRequest.Password == nil {
+		tx.Rollback() // 回滚事务
 		return fmt.Errorf("密码不能为空")
 	}
 	hashedPassword, err := utils.EncodePassword(*userCreateRequest.Password)
 	if err != nil {
+		tx.Rollback() // 回滚事务
 		return err
 	}
 	userCreateRequest.Password = &hashedPassword
 
-	var user = &model.User{
-		Username: userCreateRequest.Username,
-		Password: userCreateRequest.Password,
-		Nickname: userCreateRequest.Nickname,
-		Email:    userCreateRequest.Email,
-		Phone:    userCreateRequest.Phone,
-		Status:   userCreateRequest.Status,
-		RoleID:   userCreateRequest.RoleID,
-	}
-
 	// 创建用户
-	if err := mysql.DB.Model(&model.User{}).Create(user).Error; err != nil {
+	if err := mysql.DB.Model(&model.User{}).Create(userCreateRequest).Error; err != nil {
+		tx.Rollback() // 回滚事务
 		return err
 	}
 
-	// 创建用户角色关联
-	var userRoleService UserRoleService
-	if err := userRoleService.CreateUserRole(user); err != nil {
-		return err
+	// 如果传入 roleID
+	if userCreateRequest.RoleID != nil {
+		// 创建用户角色关联
+		var userRoleService UserRoleService
+		if err := userRoleService.SaveUserRole(tx, userCreateRequest.ID, *userCreateRequest.RoleID); err != nil {
+			tx.Rollback() // 回滚事务
+			return err
+		}
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		// 事务提交失败，回滚事务
+		tx.Rollback() // 回滚事务
+		return fmt.Errorf("提交事务失败: %v", err)
 	}
 
 	return nil
@@ -82,9 +95,20 @@ func (service *UserService) CreateUser(userCreateRequest *model.UserCreateReques
 
 // DeleteUser 删除用户
 func (service *UserService) DeleteUser(id uint) error {
-	if err := mysql.DB.Delete(&model.User{}, id).Error; err != nil {
+	// 开启事务
+	tx := mysql.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback() // 回滚事务
+		}
+	}()
+
+	// 删除用户
+	if err := tx.Delete(&model.User{}, id).Error; err != nil {
 		return err
 	}
+
+	// 删除用户角色关联
 
 	return nil
 }
@@ -116,7 +140,7 @@ func (service *UserService) PatchUser(id uint, userPatchRequest *model.UserPatch
 	if userPatchRequest.RoleID != nil {
 		// 更新用户角色关联，
 		var userRoleService UserRoleService
-		if err := userRoleService.UpdateUserRole(tx, id, *userPatchRequest.RoleID); err != nil {
+		if err := userRoleService.SaveUserRole(tx, id, *userPatchRequest.RoleID); err != nil {
 			tx.Rollback() // 回滚事务
 			return err
 		}
@@ -124,6 +148,7 @@ func (service *UserService) PatchUser(id uint, userPatchRequest *model.UserPatch
 
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
+		tx.Rollback() // 回滚事务
 		return fmt.Errorf("提交事务失败: %v", err)
 	}
 

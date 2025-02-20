@@ -24,7 +24,7 @@ type UserCreateRequest struct {
 	Email     *string      `json:"email" binding:"omitempty,email"`
 	Phone     *string      `json:"phone" binding:"omitempty"`
 	Status    types.Status `json:"status" gorm:"default:1" binding:"omitempty,oneof=1 2"` // 使用指针以区分是否需要更新
-	RoleID    uint         `json:"roleId"`
+	RoleID    *uint        `json:"roleId"`
 	BaseModel              // 嵌入基础模型
 }
 
