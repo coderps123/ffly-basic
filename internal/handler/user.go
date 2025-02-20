@@ -62,32 +62,6 @@ func CreateUser(c *gin.Context) {
 	response.Success(c, nil, "创建成功")
 }
 
-// UpdateUser 更新用户信息
-func UpdateUser(c *gin.Context) {
-	var userService service.UserService
-
-	// 解析请求参数
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64) // 解析用户ID 10：表示10进制，64：表示64位
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "参数错误", err)
-		return
-	}
-
-	var userUpdateRequest model.UserUpdateRequest
-	if err := c.ShouldBindJSON(&userUpdateRequest); err != nil {
-		response.Error(c, http.StatusBadRequest, "参数错误", err)
-		return
-	}
-
-	// 更新用户信息
-	if err := userService.UpdateUser(uint(id), &userUpdateRequest); err != nil {
-		response.Error(c, http.StatusInternalServerError, "更新用户信息失败", err)
-		return
-	}
-
-	response.Success(c, nil, "更新成功")
-}
-
 // PatchUser 更新部分用户信息
 func PatchUser(c *gin.Context) {
 	var userService service.UserService
@@ -97,13 +71,13 @@ func PatchUser(c *gin.Context) {
 		return
 	}
 
-	var UserPatchStatusRequest = model.UserPatchStatusRequest{}
-	if err := c.ShouldBindJSON(&UserPatchStatusRequest); err != nil {
+	var UserPatchRequest = model.UserPatchRequest{}
+	if err := c.ShouldBindJSON(&UserPatchRequest); err != nil {
 		response.Error(c, http.StatusBadRequest, "参数错误", err)
 		return
 	}
 
-	if err := userService.PatchUserStatus(uint(id), &UserPatchStatusRequest); err != nil {
+	if err := userService.PatchUser(uint(id), &UserPatchRequest); err != nil {
 		response.Error(c, http.StatusInternalServerError, "更新用户信息失败", err)
 		return
 	}
@@ -141,4 +115,27 @@ func GetCurrentUserInfo(c *gin.Context) {
 	}
 
 	response.Success(c, user, "获取成功")
+}
+
+// UpdateUserPassword 修改密码
+func UpdateUserPassword(c *gin.Context) {
+	var userService service.UserService
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64) // 解析用户ID 10：表示10进制，64：表示64位
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "参数错误", err)
+		return
+	}
+
+	var passwordUpdateRequest model.UpdatePasswordRequest
+	if err := c.ShouldBindJSON(&passwordUpdateRequest); err != nil {
+		response.Error(c, http.StatusBadRequest, "参数错误", err)
+		return
+	}
+
+	if err := userService.UpdatePassword(uint(id), &passwordUpdateRequest); err != nil {
+		response.Error(c, http.StatusInternalServerError, "修改密码失败", err)
+		return
+	}
+
+	response.Success(c, nil, "修改密码成功")
 }

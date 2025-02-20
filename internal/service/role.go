@@ -34,41 +34,17 @@ func (service *RoleService) GetRoleByID(id uint) (*model.Role, error) {
 }
 
 // CreateRole 创建角色
-func (service *RoleService) CreateRole(role *model.Role) error {
-	// 检查 status 是否合规
-	if *role.Status != model.RoleStatusActive && *role.Status != model.RoleStatusInactive {
-		return fmt.Errorf("status 必须为 %d 或 %d", model.RoleStatusActive, model.RoleStatusInactive)
-	}
-
-	if err := mysql.DB.Create(role).Error; err != nil {
+func (service *RoleService) CreateRole(roleCreateRequest *model.RoleCreateRequest) error {
+	if err := mysql.DB.Model(&model.Role{}).Create(roleCreateRequest).Error; err != nil {
 		return fmt.Errorf("创建角色失败: %w", err)
 	}
 	return nil
 }
 
-// UpdateRole 更新角色
-func (service *RoleService) UpdateRole(id uint, role *model.Role) error {
-	// 检查 status 是否合规
-	if *role.Status != model.RoleStatusActive && *role.Status != model.RoleStatusInactive {
-		return fmt.Errorf("status 必须为 %d 或 %d", model.RoleStatusActive, model.RoleStatusInactive)
-	}
-
-	// 使用 Select 指定要更新的字段，避免零值更新问题
-	if err := mysql.DB.Model(&model.Role{}).Where("id = ?", id).Select("name", "code", "remark", "status").Updates(role).Error; err != nil {
+// PatchRole 部分更新角色
+func (service *RoleService) PatchRole(id uint, rolePatchRequest *model.RolePatchRequest) error {
+	if err := mysql.DB.Model(&model.Role{}).Where("id = ?", id).Updates(rolePatchRequest).Error; err != nil {
 		return fmt.Errorf("更新角色失败: %w", err)
-	}
-	return nil
-}
-
-// PatchRoleStatus 修改角色状态信息
-func (service *RoleService) PatchRoleStatus(id uint, patchRoleRequest *model.PatchRoleRequest) error {
-	// 检查 status 是否合规
-	if *patchRoleRequest.Status != model.RoleStatusActive && *patchRoleRequest.Status != model.RoleStatusInactive {
-		return fmt.Errorf("status 必须为 %d 或 %d", model.RoleStatusActive, model.RoleStatusInactive)
-	}
-
-	if err := mysql.DB.Model(&model.Role{}).Where("id = ?", id).Update("status", patchRoleRequest.Status).Error; err != nil {
-		return fmt.Errorf("更新角色状态失败: %w", err)
 	}
 	return nil
 }

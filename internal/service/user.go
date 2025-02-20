@@ -56,8 +56,24 @@ func (service *UserService) CreateUser(userCreateRequest *model.UserCreateReques
 	}
 	userCreateRequest.Password = &hashedPassword
 
+	var user = &model.User{
+		Username: userCreateRequest.Username,
+		Password: userCreateRequest.Password,
+		Nickname: userCreateRequest.Nickname,
+		Email:    userCreateRequest.Email,
+		Phone:    userCreateRequest.Phone,
+		Status:   userCreateRequest.Status,
+		RoleID:   userCreateRequest.RoleID,
+	}
+
 	// 创建用户
-	if err := mysql.DB.Model(&model.User{}).Create(userCreateRequest).Error; err != nil {
+	if err := mysql.DB.Model(&model.User{}).Create(user).Error; err != nil {
+		return err
+	}
+
+	// 创建用户角色关联
+	var userRoleService UserRoleService
+	if err := userRoleService.CreateUserRole(user); err != nil {
 		return err
 	}
 
@@ -73,23 +89,74 @@ func (service *UserService) DeleteUser(id uint) error {
 	return nil
 }
 
-// UpdateUser 修改用户
-func (service *UserService) UpdateUser(id uint, userUpdateRequest *model.UserUpdateRequest) error {
-	// 直接更新并检查是否存在
-	result := mysql.DB.Model(&model.User{}).Where("id = ?", id).Updates(userUpdateRequest)
+// PatchUser 修改用户状态信息
+func (service *UserService) PatchUser(id uint, userPatchRequest *model.UserPatchRequest) error {
+	// 开启事务
+	tx := mysql.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil { // 遇到异常回滚事务
+			tx.Rollback() // 回滚事务
+		}
+	}()
+
+	// 校验手机号是否合规
+	if userPatchRequest.Phone != nil && !utils.IsPhone(*userPatchRequest.Phone) {
+		tx.Rollback() // 回滚事务
+		return fmt.Errorf("手机号不合规")
+	}
+
+	// 更新用户信息
+	result := tx.Model(&model.User{}).Where("id = ?", id).Updates(userPatchRequest)
 	if result.Error != nil {
+		tx.Rollback() // 回滚事务
 		return result.Error
+	}
+
+	// 如果用户传入 roleID
+	if userPatchRequest.RoleID != nil {
+		// 更新用户角色关联，
+		var userRoleService UserRoleService
+		if err := userRoleService.UpdateUserRole(tx, id, *userPatchRequest.RoleID); err != nil {
+			tx.Rollback() // 回滚事务
+			return err
+		}
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		return fmt.Errorf("提交事务失败: %v", err)
 	}
 
 	return nil
 }
 
-// PatchUserStatus 修改用户状态信息
-func (service *UserService) PatchUserStatus(id uint, userPatchStatusRequest *model.UserPatchStatusRequest) error {
-	// 直接更新并检查是否存在
-	result := mysql.DB.Model(&model.User{}).Where("id = ?", id).Updates(userPatchStatusRequest)
-	if result.Error != nil {
-		return result.Error
+// UpdatePassword 修改用户密码
+func (service *UserService) UpdatePassword(id uint, updatePasswordRequest *model.UpdatePasswordRequest) error {
+	// 查询用户
+	user, err := service.GetUserByID(id)
+	if err != nil {
+		return err
+	}
+	// 校验密码与确认密码是否一致
+	if updatePasswordRequest.NewPassword != nil && updatePasswordRequest.PasswordConfirm != nil &&
+		*updatePasswordRequest.NewPassword != *updatePasswordRequest.PasswordConfirm {
+		return fmt.Errorf("新密码和确认密码不匹配")
+	}
+
+	// 校验密码是否正确
+	if !utils.CheckPassword(*user.Password, *updatePasswordRequest.Password) {
+		return fmt.Errorf("旧密码错误")
+	}
+
+	// 加密密码
+	hashedPassword, err := utils.EncodePassword(*updatePasswordRequest.NewPassword)
+	if err != nil {
+		return err
+	}
+
+	// 更新密码
+	if err := mysql.DB.Model(&model.User{}).Where("id = ?", id).Update("password", &hashedPassword).Error; err != nil {
+		return err
 	}
 
 	return nil

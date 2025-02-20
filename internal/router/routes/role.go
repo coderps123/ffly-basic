@@ -12,7 +12,6 @@ func ResigterRoleRouter(g *gin.RouterGroup) {
 		group.GET("", handler.GetRoleList)
 		group.GET("/:id", handler.GetRole)
 		group.POST("", handler.CreateRole)
-		group.PUT("/:id", handler.UpdateRole)
 		group.PATCH("/:id", handler.PatchRole)
 		group.DELETE("/:id", handler.DeleteRole)
 	}

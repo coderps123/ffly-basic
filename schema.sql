@@ -121,3 +121,6 @@ alter table `users`
 add unique key `uk_username` (`username`),
 add unique key `uk_email` (`email`),
 add unique key `uk_phone` (`phone`);
+
+alter table `permissions` 
+modify column `type` enum('menu', 'button') not null comment '权限类型, menu: 菜单, button: 按钮';

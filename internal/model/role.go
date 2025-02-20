@@ -1,34 +1,34 @@
 package model
 
 import (
-	"time"
-
-	"gorm.io/gorm"
+	types "ffly-baisc/pkg/type"
 )
 
-type RoleStatusType int
-
-const (
-	RoleStatusActive   RoleStatusType = 1 // 1: active
-	RoleStatusInactive RoleStatusType = 0 // 0: inactive
-)
-
-// PatchRoleRequest 更新角色状态请求
-type PatchRoleRequest struct {
-	Status *RoleStatusType `json:"status" binding:"required,oneof=1 0"` // 1:启用 0:禁用
+// Role 角色模型 -- 只用于查询
+type Role struct {
+	Name   string       `json:"name"`
+	Code   string       `json:"code"`
+	Remark string       `json:"remark"`
+	Status types.Status `json:"status"`
+	BaseModel
 }
 
-// Role 角色模型
-type Role struct {
-	gorm.Model
-	ID        uint            `json:"id"`
-	Name      string          `json:"name" binding:"required"`
-	Code      string          `json:"code" binding:"required"`
-	Remark    string          `json:"remark"`
-	Status    *RoleStatusType `json:"status"` // 1:启用 0:禁用
-	CreatedAt time.Time       `json:"created_at"`
-	UpdatedAt time.Time       `json:"updated_at"`
-	DeletedAt gorm.DeletedAt  `json:"-"`
+// RoleCreateRequest 创建角色请求模型 -- 请求入参
+type RoleCreateRequest struct {
+	Name   *string      `json:"name" binding:"required"`
+	Code   *string      `json:"code" binding:"required"`
+	Remark *string      `json:"remark"`
+	Status types.Status `json:"status" gorm:"default:1" binding:"omitempty,oneof=1 2"`
+	BaseModel
+}
+
+// RolePatchRequest 部分更新角色请求模型 -- 请求入参
+type RolePatchRequest struct {
+	Name   *string      `json:"name"`
+	Code   *string      `json:"code"`
+	Remark *string      `json:"remark"`
+	Status types.Status `json:"status"`
+	BaseModel
 }
 
 // TableName 自定义表名

@@ -45,25 +45,25 @@ func GetRole(c *gin.Context) {
 // CreateRole 创建角色
 func CreateRole(c *gin.Context) {
 	var roleService service.RoleService
-	var role model.Role
+	var roleCreateRequest model.RoleCreateRequest
 
-	if err := c.ShouldBindJSON(&role); err != nil {
+	if err := c.ShouldBindJSON(&roleCreateRequest); err != nil {
 		response.Error(c, http.StatusBadRequest, "请求参数无效", err)
 		return
 	}
 
-	if err := roleService.CreateRole(&role); err != nil {
+	if err := roleService.CreateRole(&roleCreateRequest); err != nil {
 		response.Error(c, http.StatusInternalServerError, "创建角色失败", err)
 		return
 	}
 
-	response.Success(c, role, "角色创建成功")
+	response.Success(c, nil, "角色创建成功")
 }
 
-// UpdateRole 更新角色
-func UpdateRole(c *gin.Context) {
+// PatchRole 部分更新角色
+func PatchRole(c *gin.Context) {
 	var roleService service.RoleService
-	var role model.Role
+	var rolePatchRequest model.RolePatchRequest
 
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64) // 解析用户ID 10：表示10进制，64：表示64位
 	if err != nil {
@@ -71,53 +71,17 @@ func UpdateRole(c *gin.Context) {
 		return
 	}
 
-	if err := c.ShouldBindJSON(&role); err != nil {
+	if err := c.ShouldBindJSON(&rolePatchRequest); err != nil {
 		response.Error(c, http.StatusBadRequest, "请求参数无效", err)
 		return
 	}
 
-	if err := roleService.UpdateRole(uint(id), &role); err != nil {
+	if err := roleService.PatchRole(uint(id), &rolePatchRequest); err != nil {
 		response.Error(c, http.StatusInternalServerError, "更新角色失败", err)
 		return
 	}
 
-	roleInfo, err := roleService.GetRoleByID(uint(id))
-	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "获取更新后的角色信息失败", err)
-		return
-	}
-
-	response.Success(c, roleInfo, "角色更新成功")
-}
-
-// PatchRole 更新角色状态
-func PatchRole(c *gin.Context) {
-	var roleService service.RoleService
-	var patchRequest model.PatchRoleRequest
-
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64) // 解析用户ID 10：表示10进制，64：表示64位
-	if err != nil {
-		response.Error(c, http.StatusBadRequest, "无效的角色ID", err)
-		return
-	}
-
-	if err := c.ShouldBindJSON(&patchRequest); err != nil {
-		response.Error(c, http.StatusBadRequest, "请求参数无效", err)
-		return
-	}
-
-	if err := roleService.PatchRoleStatus(uint(id), &patchRequest); err != nil {
-		response.Error(c, http.StatusInternalServerError, "更新角色状态失败", err)
-		return
-	}
-
-	roleInfo, err := roleService.GetRoleByID(uint(id))
-	if err != nil {
-		response.Error(c, http.StatusInternalServerError, "获取更新后的角色信息失败", err)
-		return
-	}
-
-	response.Success(c, roleInfo, "角色状态更新成功")
+	response.Success(c, nil, "角色更新成功")
 }
 
 // DeleteRole 删除角色
