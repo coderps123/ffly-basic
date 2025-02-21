@@ -51,8 +51,57 @@ func (service *RoleService) PatchRole(id uint, rolePatchRequest *model.RolePatch
 
 // DeleteRole 删除角色
 func (service *RoleService) DeleteRole(id uint) error {
-	if err := mysql.DB.Delete(&model.Role{}, id).Error; err != nil {
+	// 开启事务
+	tx := mysql.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback() // 回滚事务
+		}
+	}()
+
+	// 需要先删除角色权限关系表
+	var rolePermissionService RolePermissionService
+	if err := rolePermissionService.SaveRolePermission(tx, id, []uint{}); err != nil {
+		tx.Rollback() // 回滚事务
+		return fmt.Errorf("更新角色权限失败: %w", err)
+	}
+
+	// 删除角色
+	if err := tx.Delete(&model.Role{}, id).Error; err != nil {
+		tx.Rollback() // 回滚事务
 		return fmt.Errorf("删除角色失败: %w", err)
 	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback() // 回滚事务
+		return fmt.Errorf("提交事务失败: %w", err)
+	}
+
+	return nil
+}
+
+// PatchRolePermissions 更新角色权限
+func (service *RoleService) PatchRolePermissions(id uint, rolePermissionUpdateRequest *model.RolePermissionUpdateRequest) error {
+	// 开启事务
+	tx := mysql.DB.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback() // 回滚事务
+		}
+	}()
+
+	var rolePermissionService RolePermissionService
+	if err := rolePermissionService.SaveRolePermission(tx, id, rolePermissionUpdateRequest.PermissionIDs); err != nil {
+		tx.Rollback() // 回滚事务
+		return fmt.Errorf("更新角色权限失败: %w", err)
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback() // 回滚事务
+		return fmt.Errorf("提交事务失败: %w", err)
+	}
+
 	return nil
 }

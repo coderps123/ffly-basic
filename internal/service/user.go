@@ -30,11 +30,11 @@ func (service *UserService) GetUserList(c *gin.Context) ([]*model.User, *paginat
 // GetUserByID 根据 ID 获取用户信息
 func (service *UserService) GetUserByID(id uint) (*model.User, error) {
 	user := &model.User{}
-	if result := mysql.DB.First(user, id); result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+	if err := mysql.DB.First(user, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("用户不存在")
 		}
-		return nil, result.Error
+		return nil, err
 	}
 	return user, nil
 }
@@ -105,10 +105,22 @@ func (service *UserService) DeleteUser(id uint) error {
 
 	// 删除用户
 	if err := tx.Delete(&model.User{}, id).Error; err != nil {
+		tx.Rollback() // 回滚事务
 		return err
 	}
 
 	// 删除用户角色关联
+	var userRoleService UserRoleService
+	if err := userRoleService.SaveUserRole(tx, id, 0); err != nil {
+		tx.Rollback() // 回滚事务
+		return err
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback() // 回滚事务
+		return fmt.Errorf("提交事务失败: %v", err)
+	}
 
 	return nil
 }

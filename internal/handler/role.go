@@ -101,3 +101,26 @@ func DeleteRole(c *gin.Context) {
 
 	response.Success(c, nil, "角色删除成功")
 }
+
+// PatchRolePermissions 更新角色权限
+func PatchRolePermissions(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64) // 解析用户ID 10：表示10进制，64：表示64位
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "无效的角色ID", err)
+		return
+	}
+
+	var rolePermissionUpdateRequest model.RolePermissionUpdateRequest
+	if err := c.ShouldBindJSON(&rolePermissionUpdateRequest); err != nil {
+		response.Error(c, http.StatusBadRequest, "请求参数无效", err)
+		return
+	}
+
+	var roleService service.RoleService
+	if err := roleService.PatchRolePermissions(uint(id), &rolePermissionUpdateRequest); err != nil {
+		response.Error(c, http.StatusInternalServerError, "更新角色权限失败", err)
+		return
+	}
+
+	response.Success(c, nil, "角色权限更新成功")
+}
