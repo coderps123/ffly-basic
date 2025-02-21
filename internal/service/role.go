@@ -1,8 +1,8 @@
 package service
 
 import (
+	"ffly-baisc/internal/db"
 	"ffly-baisc/internal/model"
-	"ffly-baisc/internal/mysql"
 	"ffly-baisc/pkg/pagination"
 	"fmt"
 
@@ -16,7 +16,7 @@ func (service *RoleService) GetRoleList(c *gin.Context) ([]*model.Role, *paginat
 	var roles []*model.Role
 
 	// 查询权限列表
-	pagination, err := pagination.GetListByContext(mysql.DB, &roles, c)
+	pagination, err := pagination.GetListByContext(db.DB.MySQL, &roles, c)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -27,7 +27,7 @@ func (service *RoleService) GetRoleList(c *gin.Context) ([]*model.Role, *paginat
 // GetRoleByID 获取角色
 func (service *RoleService) GetRoleByID(id uint) (*model.Role, error) {
 	var role model.Role
-	if err := mysql.DB.First(&role, id).Error; err != nil {
+	if err := db.DB.MySQL.First(&role, id).Error; err != nil {
 		return nil, fmt.Errorf("获取角色失败: %w", err)
 	}
 	return &role, nil
@@ -35,7 +35,7 @@ func (service *RoleService) GetRoleByID(id uint) (*model.Role, error) {
 
 // CreateRole 创建角色
 func (service *RoleService) CreateRole(roleCreateRequest *model.RoleCreateRequest) error {
-	if err := mysql.DB.Model(&model.Role{}).Create(roleCreateRequest).Error; err != nil {
+	if err := db.DB.MySQL.Model(&model.Role{}).Create(roleCreateRequest).Error; err != nil {
 		return fmt.Errorf("创建角色失败: %w", err)
 	}
 	return nil
@@ -43,7 +43,7 @@ func (service *RoleService) CreateRole(roleCreateRequest *model.RoleCreateReques
 
 // PatchRole 部分更新角色
 func (service *RoleService) PatchRole(id uint, rolePatchRequest *model.RolePatchRequest) error {
-	if err := mysql.DB.Model(&model.Role{}).Where("id = ?", id).Updates(rolePatchRequest).Error; err != nil {
+	if err := db.DB.MySQL.Model(&model.Role{}).Where("id = ?", id).Updates(rolePatchRequest).Error; err != nil {
 		return fmt.Errorf("更新角色失败: %w", err)
 	}
 	return nil
@@ -52,7 +52,7 @@ func (service *RoleService) PatchRole(id uint, rolePatchRequest *model.RolePatch
 // DeleteRole 删除角色
 func (service *RoleService) DeleteRole(id uint) error {
 	// 开启事务
-	tx := mysql.DB.Begin()
+	tx := db.DB.MySQL.Begin()
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback() // 回滚事务
@@ -84,7 +84,7 @@ func (service *RoleService) DeleteRole(id uint) error {
 // PatchRolePermissions 更新角色权限
 func (service *RoleService) PatchRolePermissions(id uint, rolePermissionUpdateRequest *model.RolePermissionUpdateRequest) error {
 	// 开启事务
-	tx := mysql.DB.Begin()
+	tx := db.DB.MySQL.Begin()
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback() // 回滚事务

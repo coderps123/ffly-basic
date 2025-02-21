@@ -5,6 +5,7 @@ import "github.com/spf13/viper"
 type Config struct {
 	App   AppConfig
 	MySql MySqlConfig
+	Redis RedisConfig
 }
 
 type AppConfig struct {
@@ -24,6 +25,15 @@ type MySqlConfig struct {
 	MaxIdleConns          int    `mapstructure:"max_idle_conns"`
 	MaxOpenConns          int    `mapstructure:"max_open_conns"`
 	ConnectionMaxLifetime int    `mapstructure:"connection_max_lifetime"`
+}
+
+type RedisConfig struct {
+	Host         string `mapstructure:"host"`
+	Port         int    `mapstructure:"port"`
+	Password     string `mapstructure:"password"`
+	DB           int    `mapstructure:"db"`
+	PoolSize     int    `mapstructure:"pool_size"`
+	MinIdleConns int    `mapstructure:"min_idle_conns"`
 }
 
 var (

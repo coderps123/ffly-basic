@@ -2,8 +2,8 @@ package service
 
 import (
 	"errors"
+	"ffly-baisc/internal/db"
 	"ffly-baisc/internal/model"
-	"ffly-baisc/internal/mysql"
 	"ffly-baisc/pkg/pagination"
 	"ffly-baisc/pkg/utils"
 	"fmt"
@@ -19,7 +19,7 @@ func (service *UserService) GetUserList(c *gin.Context) ([]*model.User, *paginat
 	var users []*model.User
 
 	// 查询权限列表
-	pagination, err := pagination.GetListByContext(mysql.DB, &users, c)
+	pagination, err := pagination.GetListByContext(db.DB.MySQL, &users, c)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -30,7 +30,7 @@ func (service *UserService) GetUserList(c *gin.Context) ([]*model.User, *paginat
 // GetUserByID 根据 ID 获取用户信息
 func (service *UserService) GetUserByID(id uint) (*model.User, error) {
 	user := &model.User{}
-	if err := mysql.DB.First(user, id).Error; err != nil {
+	if err := db.DB.MySQL.First(user, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, fmt.Errorf("用户不存在")
 		}
@@ -42,7 +42,7 @@ func (service *UserService) GetUserByID(id uint) (*model.User, error) {
 // CreateUser 创建用户
 func (service *UserService) CreateUser(userCreateRequest *model.UserCreateRequest) error {
 	// 开启事务
-	tx := mysql.DB.Begin()
+	tx := db.DB.MySQL.Begin()
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback() // 回滚事务
@@ -68,7 +68,7 @@ func (service *UserService) CreateUser(userCreateRequest *model.UserCreateReques
 	userCreateRequest.Password = &hashedPassword
 
 	// 创建用户
-	if err := mysql.DB.Model(&model.User{}).Create(userCreateRequest).Error; err != nil {
+	if err := db.DB.MySQL.Model(&model.User{}).Create(userCreateRequest).Error; err != nil {
 		tx.Rollback() // 回滚事务
 		return err
 	}
@@ -96,7 +96,7 @@ func (service *UserService) CreateUser(userCreateRequest *model.UserCreateReques
 // DeleteUser 删除用户
 func (service *UserService) DeleteUser(id uint) error {
 	// 开启事务
-	tx := mysql.DB.Begin()
+	tx := db.DB.MySQL.Begin()
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback() // 回滚事务
@@ -128,7 +128,7 @@ func (service *UserService) DeleteUser(id uint) error {
 // PatchUser 修改用户状态信息
 func (service *UserService) PatchUser(id uint, userPatchRequest *model.UserPatchRequest) error {
 	// 开启事务
-	tx := mysql.DB.Begin()
+	tx := db.DB.MySQL.Begin()
 	defer func() {
 		if r := recover(); r != nil { // 遇到异常回滚事务
 			tx.Rollback() // 回滚事务
@@ -192,7 +192,7 @@ func (service *UserService) UpdatePassword(id uint, updatePasswordRequest *model
 	}
 
 	// 更新密码
-	if err := mysql.DB.Model(&model.User{}).Where("id = ?", id).Update("password", &hashedPassword).Error; err != nil {
+	if err := db.DB.MySQL.Model(&model.User{}).Where("id = ?", id).Update("password", &hashedPassword).Error; err != nil {
 		return err
 	}
 

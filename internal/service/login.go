@@ -2,8 +2,8 @@ package service
 
 import (
 	"errors"
+	"ffly-baisc/internal/db"
 	"ffly-baisc/internal/model"
-	"ffly-baisc/internal/mysql"
 	"ffly-baisc/pkg/auth"
 	"ffly-baisc/pkg/utils"
 
@@ -18,7 +18,7 @@ type LoginService struct {
 func (service *LoginService) Login() (string, error) {
 	// 检查用户名是否存在
 	var user model.User
-	if err := mysql.DB.Where("username = ?", service.Username).First(&user).Error; err != nil {
+	if err := db.DB.MySQL.Where("username = ?", service.Username).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// gorm.ErrRecordNotFound 是 gorm 的一个错误类型，表示没有找到记录
 			// Is 用于判断错误是否为 gorm.ErrRecordNotFound
@@ -53,7 +53,7 @@ type RegisterService struct {
 func (service *RegisterService) Register() error {
 	// 检查用户名是否存在
 	var count int64
-	if err := mysql.DB.Model(&model.User{}).Where("username = ?", service.Username).Count(&count).Error; err != nil {
+	if err := db.DB.MySQL.Model(&model.User{}).Where("username = ?", service.Username).Count(&count).Error; err != nil {
 		return err
 	}
 
@@ -80,5 +80,5 @@ func (service *RegisterService) Register() error {
 		Phone:    &service.Phone,
 	}
 
-	return mysql.DB.Create(user).Error
+	return db.DB.MySQL.Create(user).Error
 }

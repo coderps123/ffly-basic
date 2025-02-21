@@ -1,7 +1,6 @@
 package pagination
 
 import (
-	"ffly-baisc/internal/mysql"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -54,7 +53,7 @@ func GetListByContext(db *gorm.DB, model any, c *gin.Context) (*Pagination, erro
 	p := GetPageInfo(c)
 
 	// 查询权限列表
-	if err := GetListByPage(mysql.DB, model, p); err != nil {
+	if err := GetListByPage(db, model, p); err != nil {
 		return nil, err
 	}
 
