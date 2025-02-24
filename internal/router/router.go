@@ -13,6 +13,9 @@ func InitRouter() {
 	gin.SetMode(gin.DebugMode) // 设置运行模式
 	r := gin.Default()
 
+	// 使用 ApiLog 中间件
+	r.Use(middleware.ApiLog())
+
 	// API v1
 	v1 := r.Group("/api/v1")
 	{
@@ -32,6 +35,8 @@ func InitRouter() {
 		routes.ResigterRoleRouter(authGroup)
 		// 注册权限路由
 		routes.ResigterPermissionRouter(authGroup)
+		// 注册 API 日志 路由
+		routes.ResigterApiLogRouter(authGroup)
 	}
 
 	r.Run(fmt.Sprintf(":%d", config.GlobalConfig.App.Port)) // 监听端口

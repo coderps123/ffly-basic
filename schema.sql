@@ -114,13 +114,32 @@ create table if not exists `role_permissions` (
   references `permissions` (`id`) on delete cascade on update cascade -- 引用 permissions.id 并设置级联删除和更新
 ) engine=innodb auto_increment=1 comment='角色权限关联表';
 
+-- 创建日志表
+create table if not exists `api_logs` (
+  `id` bigint unsigned not null auto_increment comment 'ID',
+  `user_id` bigint unsigned not null comment '用户id',
+  `username` varchar(50) not null comment '用户名',
+  `path` varchar(255) not null comment '请求路径',
+  `method` varchar(10) not null comment '请求方法',
+  `query` text default null comment '请求参数',
+  `body` text default null comment '请求体',
+  `user_agent` varchar(255) not null comment '用户代理',
+  `client_ip` varchar(20) not null comment '客户端IP',
+  `status_code` int not null comment '状态码',
+  `duration` bigint not null comment '请求耗时(ms)',
+  `response_body` text default null comment '响应体',
+  `type` enum('operate', 'login') not null comment '日志类型, operate: 操作日志, login: 登录日志',
+  `created_at` timestamp not null default current_timestamp comment '创建时间',
+  `updated_at` timestamp not null default current_timestamp on update current_timestamp comment '更新时间',
+  `deleted_at` timestamp null default null comment '删除时间',
+  primary key (`id`)
+) engine=innodb auto_increment=1 comment='日志表';
 
+-- -- 修改表
+-- alter table `users` 
+-- add unique key `uk_username` (`username`),
+-- add unique key `uk_email` (`email`),
+-- add unique key `uk_phone` (`phone`);
 
--- 修改表
-alter table `users` 
-add unique key `uk_username` (`username`),
-add unique key `uk_email` (`email`),
-add unique key `uk_phone` (`phone`);
-
-alter table `permissions` 
-modify column `type` enum('menu', 'button') not null comment '权限类型, menu: 菜单, button: 按钮';
+-- alter table `permissions` 
+-- modify column `type` enum('menu', 'button') not null comment '权限类型, menu: 菜单, button: 按钮';
