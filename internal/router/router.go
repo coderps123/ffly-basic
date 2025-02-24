@@ -19,11 +19,17 @@ func InitRouter() {
 	// API v1
 	v1 := r.Group("/api/v1")
 	{
+		// --------------------
+		// 注册 API 日志 路由
+		routes.ResigterApiLogRouter(v1)
+
+		// --------------------
 		// 公开路由
 		public := v1.Group("")
 		// 注册登录路由
 		routes.ResigterLoginRouter(public)
 
+		// --------------------
 		// 需要认证的路由
 		authGroup := v1.Group("")
 		// 注册中间件
@@ -35,8 +41,6 @@ func InitRouter() {
 		routes.ResigterRoleRouter(authGroup)
 		// 注册权限路由
 		routes.ResigterPermissionRouter(authGroup)
-		// 注册 API 日志 路由
-		routes.ResigterApiLogRouter(authGroup)
 	}
 
 	r.Run(fmt.Sprintf(":%d", config.GlobalConfig.App.Port)) // 监听端口
