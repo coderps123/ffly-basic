@@ -20,7 +20,7 @@ create table if not exists `users` (
   `email` varchar(100) default null comment '邮箱',
   `phone` varchar(20) default null comment '手机号',
   `status` tinyint unsigned not null default '1' comment '状态 1: 启用 2: 禁用',
-  `role_id` bigint unsigned not null comment '角色id',
+  `role_id` bigint unsigned not null default '0' comment '角色id',
   `created_at` timestamp not null default current_timestamp comment '创建时间',
   `updated_at` timestamp not null default current_timestamp on update current_timestamp comment '更新时间',
   `deleted_at` timestamp null default null comment '删除时间',
@@ -135,11 +135,6 @@ create table if not exists `api_logs` (
   primary key (`id`)
 ) engine=innodb auto_increment=1 comment='日志表';
 
--- -- 修改表
--- alter table `users` 
--- add unique key `uk_username` (`username`),
--- add unique key `uk_email` (`email`),
--- add unique key `uk_phone` (`phone`);
-
--- alter table `permissions` 
--- modify column `type` enum('menu', 'button') not null comment '权限类型, menu: 菜单, button: 按钮';
+-- 修改表
+alter table `users` 
+modify column `role_id` bigint unsigned not null default '0' comment '角色id';

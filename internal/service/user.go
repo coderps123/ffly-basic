@@ -67,20 +67,26 @@ func (service *UserService) CreateUser(userCreateRequest *model.UserCreateReques
 	}
 	userCreateRequest.Password = &hashedPassword
 
+	// 处理 RoleID, 确保不为 nil
+	var roleID uint
+	if userCreateRequest.RoleID != nil {
+		roleID = *userCreateRequest.RoleID
+	}
+	userCreateRequest.RoleID = &roleID
+
+	fmt.Print(userCreateRequest)
+
 	// 创建用户
-	if err := db.DB.MySQL.Model(&model.User{}).Create(userCreateRequest).Error; err != nil {
+	if err := tx.Model(&model.User{}).Create(userCreateRequest).Error; err != nil {
 		tx.Rollback() // 回滚事务
 		return err
 	}
 
-	// 如果传入 roleID
-	if userCreateRequest.RoleID != nil {
-		// 创建用户角色关联
-		var userRoleService UserRoleService
-		if err := userRoleService.SaveUserRole(tx, userCreateRequest.ID, *userCreateRequest.RoleID); err != nil {
-			tx.Rollback() // 回滚事务
-			return err
-		}
+	// 创建用户角色关联
+	var userRoleService UserRoleService
+	if err := userRoleService.SaveUserRole(tx, userCreateRequest.ID, *userCreateRequest.RoleID); err != nil {
+		tx.Rollback() // 回滚事务
+		return err
 	}
 
 	// 提交事务
