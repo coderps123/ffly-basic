@@ -11,17 +11,57 @@ import (
 
 type PermissionService struct{}
 
+// BuildPermissionTree 构建权限树
+func (service *PermissionService) BuildPermissionTree(permissions []*model.Permission, parentID uint) []*model.Permission {
+	var trees []*model.Permission
+	for _, permission := range permissions {
+		// 父级权限ID等于当前权限ID，则为子权限
+		if permission.ParentID == parentID {
+			// 递归构建子权限树
+			children := service.BuildPermissionTree(permissions, permission.ID)
+			if len(children) > 0 {
+				permission.Children = children
+			}
+			// 加入树中
+			trees = append(trees, permission)
+		}
+	}
+
+	return trees
+}
+
 // GetPermissionList 获取权限列表
 func (service *PermissionService) GetPermissionList(c *gin.Context) ([]*model.Permission, *pagination.Pagination, error) {
 	var permissions []*model.Permission
 
 	// 查询权限列表
-	pagination, err := pagination.GetListByContext(db.DB.MySQL, &permissions, c)
-	if err != nil {
-		return nil, nil, err
+	if err := db.DB.MySQL.Find(&permissions).Error; err != nil {
+		return nil, nil, fmt.Errorf("获取权限列表失败: %w", err)
 	}
 
-	return permissions, pagination, nil
+	// 获取分页信息
+	pageination := pagination.GetPageInfo(c)
+
+	// 获取权限树
+	permissionTree := service.BuildPermissionTree(permissions, 0)
+
+	total := int64(len(permissionTree))
+
+	start := (pageination.Page - 1) * pageination.Size
+	end := start + pageination.Size
+	// 判断是否越界
+	if end > len(permissionTree) {
+		end = len(permissionTree)
+	}
+	if start > len(permissionTree) {
+		start = len(permissionTree)
+	}
+
+	return permissionTree[start:end], &pagination.Pagination{
+		Page:  pageination.Page,
+		Size:  pageination.Size,
+		Total: total,
+	}, nil
 }
 
 // GetPermissionByID 根据 ID 获取菜单信息

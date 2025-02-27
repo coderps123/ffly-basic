@@ -134,7 +134,3 @@ create table if not exists `api_logs` (
   `deleted_at` timestamp null default null comment '删除时间',
   primary key (`id`)
 ) engine=innodb auto_increment=1 comment='日志表';
-
--- 修改表
-alter table `users` 
-modify column `role_id` bigint unsigned not null default '0' comment '角色id';
