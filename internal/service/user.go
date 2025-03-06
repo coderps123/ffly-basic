@@ -4,7 +4,7 @@ import (
 	"errors"
 	"ffly-baisc/internal/db"
 	"ffly-baisc/internal/model"
-	"ffly-baisc/pkg/pagination"
+	"ffly-baisc/pkg/query"
 	"ffly-baisc/pkg/utils"
 	"fmt"
 
@@ -15,16 +15,17 @@ import (
 type UserService struct{}
 
 // GetUserList 获取用户列表
-func (service *UserService) GetUserList(c *gin.Context) ([]*model.User, *pagination.Pagination, error) {
-	var users []*model.User
+func (service *UserService) GetUserList(c *gin.Context) ([]*model.User, *query.Pagination, error) {
+	// var users []*model.User // 声明的是一个切片，元素类型是 *model.User 指针。
 
-	// 查询权限列表
-	pagination, err := pagination.GetListByContext(db.DB.MySQL, &users, c)
+	// 查询用户列表
+	// 此处必须传递指针，否则会导致查询结果为空，为啥：因为在 GetQueryData 函数中，会将查询结果赋值给一个切片，
+	users, pagination, err := query.GetQueryData[model.User](db.DB.MySQL, c)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return users, pagination, nil
+	return *users, pagination, nil
 }
 
 // GetUserByID 根据 ID 获取用户信息

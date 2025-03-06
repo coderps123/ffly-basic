@@ -3,7 +3,7 @@ package service
 import (
 	"ffly-baisc/internal/db"
 	"ffly-baisc/internal/model"
-	"ffly-baisc/pkg/pagination"
+	"ffly-baisc/pkg/query"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
@@ -12,16 +12,14 @@ import (
 type RoleService struct{}
 
 // GetRoleList 获取角色列表
-func (service *RoleService) GetRoleList(c *gin.Context) ([]*model.Role, *pagination.Pagination, error) {
-	var roles []*model.Role
+func (service *RoleService) GetRoleList(c *gin.Context) ([]*model.Role, *query.Pagination, error) {
 
-	// 查询权限列表
-	pagination, err := pagination.GetListByContext(db.DB.MySQL, &roles, c)
+	roles, pagination, err := query.GetQueryData[model.Role](db.DB.MySQL, c)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return roles, pagination, nil
+	return *roles, pagination, nil
 }
 
 // GetRoleByID 获取角色

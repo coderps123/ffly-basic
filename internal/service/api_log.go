@@ -3,7 +3,7 @@ package service
 import (
 	"ffly-baisc/internal/db"
 	"ffly-baisc/internal/model"
-	"ffly-baisc/pkg/pagination"
+	"ffly-baisc/pkg/query"
 
 	"github.com/gin-gonic/gin"
 )
@@ -11,16 +11,13 @@ import (
 type ApiLogService struct{}
 
 // GetApiLogList 获取用户列表
-func (service *ApiLogService) GetApiLogList(c *gin.Context) ([]*model.ApiLog, *pagination.Pagination, error) {
-	var apiLogs []*model.ApiLog
-
-	// 查询权限列表
-	pagination, err := pagination.GetListByContext(db.DB.MySQL, &apiLogs, c)
+func (service *ApiLogService) GetApiLogList(c *gin.Context) ([]*model.ApiLog, *query.Pagination, error) {
+	apiLogs, pagination, err := query.GetQueryData[model.ApiLog](db.DB.MySQL, c)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return apiLogs, pagination, nil
+	return *apiLogs, pagination, nil
 }
 
 // CreateApiLog 创建api日志

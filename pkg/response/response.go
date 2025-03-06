@@ -1,7 +1,7 @@
 package response
 
 import (
-	"ffly-baisc/pkg/pagination"
+	"ffly-baisc/pkg/query"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -20,10 +20,16 @@ type PageResponse struct {
 	Size  int   `json:"size"`
 }
 
-func Success(c *gin.Context, data any, message string) {
+func Success(c *gin.Context, data any, p *query.Pagination, message string) {
 	if message == "" {
 		message = "success"
 	}
+
+	if p != nil {
+		SuccessWithPagination(c, data, p, message)
+		return
+	}
+
 	c.JSON(http.StatusOK, Response{
 		Code:    http.StatusOK,
 		Message: message,
@@ -42,18 +48,20 @@ func Error(c *gin.Context, httpCode int, message string, err error) {
 	})
 }
 
-func SuccessWithPagination(c *gin.Context, data any, p *pagination.Pagination, message string) {
+func SuccessWithPagination(c *gin.Context, data any, p *query.Pagination, message string) {
 	if message == "" {
 		message = "success"
+	}
+
+	var dataResult = PageResponse{
+		List:  data,
+		Total: *p.Total,
+		Page:  p.Page,
+		Size:  p.Size,
 	}
 	c.JSON(http.StatusOK, Response{
 		Code:    http.StatusOK,
 		Message: message,
-		Data: PageResponse{
-			List:  data,
-			Total: p.Total,
-			Page:  p.Page,
-			Size:  p.Size,
-		},
+		Data:    dataResult,
 	})
 }

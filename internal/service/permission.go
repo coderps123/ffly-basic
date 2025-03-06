@@ -3,7 +3,8 @@ package service
 import (
 	"ffly-baisc/internal/db"
 	"ffly-baisc/internal/model"
-	"ffly-baisc/pkg/pagination"
+	"ffly-baisc/pkg/file"
+	"ffly-baisc/pkg/query"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
@@ -12,11 +13,11 @@ import (
 type PermissionService struct{}
 
 // BuildPermissionTree 构建权限树
-func (service *PermissionService) BuildPermissionTree(permissions []*model.Permission, id uint) []*model.Permission {
+func (service *PermissionService) BuildPermissionTree(permissions []*model.Permission, parentID uint) []*model.Permission {
 	var trees []*model.Permission
 	for _, permission := range permissions {
 		// 父级权限ID等于当前权限ID，则为子权限
-		if permission.ParentID == id {
+		if permission.ParentID == parentID {
 			// 递归构建子权限树
 			children := service.BuildPermissionTree(permissions, permission.ID)
 			if len(children) > 0 {
@@ -31,7 +32,7 @@ func (service *PermissionService) BuildPermissionTree(permissions []*model.Permi
 }
 
 // GetPermissionList 获取权限列表
-func (service *PermissionService) GetPermissionList(c *gin.Context) ([]*model.Permission, *pagination.Pagination, error) {
+func (service *PermissionService) GetPermissionList(c *gin.Context) ([]*model.Permission, *query.Pagination, error) {
 	var permissions []*model.Permission
 
 	// 查询权限列表
@@ -40,7 +41,7 @@ func (service *PermissionService) GetPermissionList(c *gin.Context) ([]*model.Pe
 	}
 
 	// 获取分页信息
-	pageination := pagination.GetPageInfo(c)
+	pageination := query.GetPageInfo(c)
 
 	// 获取权限树
 	permissionTree := service.BuildPermissionTree(permissions, 0)
@@ -57,10 +58,10 @@ func (service *PermissionService) GetPermissionList(c *gin.Context) ([]*model.Pe
 		start = len(permissionTree)
 	}
 
-	return permissionTree[start:end], &pagination.Pagination{
+	return permissionTree[start:end], &query.Pagination{
 		Page:  pageination.Page,
 		Size:  pageination.Size,
-		Total: total,
+		Total: &total,
 	}, nil
 }
 
@@ -82,41 +83,13 @@ func (service *PermissionService) CreatePermission(permissionCreatedRequest *mod
 	return nil
 }
 
-// DeletePermission 删除菜单及其所有子菜单
+// DeletePermission 删除菜单
 func (service *PermissionService) DeletePermission(id uint) error {
-	var permissions []*model.Permission
-
-	// 查询所有的菜单
-	if err := db.DB.MySQL.Find(&permissions).Error; err != nil {
-		return fmt.Errorf("获取权限列表失败: %w", err)
-	}
-
-	// 获取待删除的权限ID列表
-	permissionIDs := service.getPermissionIDsToDelete(permissions, id)
-
-	// 删除所有的相关权限
-	if err := db.DB.MySQL.Where("id IN ?", permissionIDs).Delete(&model.Permission{}).Error; err != nil {
+	if err := db.DB.MySQL.Delete(&model.Permission{}, id).Error; err != nil {
 		return fmt.Errorf("删除权限失败: %w", err)
 	}
 
 	return nil
-}
-
-// getPermissionIDsToDelete 获取待删除的权限ID列表
-func (service *PermissionService) getPermissionIDsToDelete(permissions []*model.Permission, id uint) []uint {
-	var ids []uint
-	// 先添加待删除的权限ID
-	ids = append(ids, id)
-	for _, permission := range permissions {
-		// 如果当前权限的父级ID等于待删除的ID，则添加到列表中
-		if permission.ParentID == id {
-			ids = append(ids, permission.ID)
-			// 递归获取子节点的ID
-			childIDs := service.getPermissionIDsToDelete(permissions, permission.ID)
-			ids = append(ids, childIDs...)
-		}
-	}
-	return ids
 }
 
 // PatchPermission 修改菜单
@@ -125,6 +98,39 @@ func (service *PermissionService) PatchPermission(id uint, permissionPatchReques
 	// 状态验证是自动的，通过 UnmarshalJSON 实现
 	if err := db.DB.MySQL.Model(&model.Permission{}).Where("id = ?", id).Updates(permissionPatchRequest).Error; err != nil {
 		return fmt.Errorf("更新菜单失败: %w", err)
+	}
+
+	return nil
+}
+
+// ExportPermission 导出菜单
+func (service *PermissionService) ExportPermission(c *gin.Context) error {
+	// 获取所有的权限
+	var permissions []*model.Permission
+	if err := db.DB.MySQL.Find(&permissions).Error; err != nil {
+		return fmt.Errorf("获取权限列表失败: %w", err)
+	}
+
+	// 构建权限树
+	permissionTree := service.BuildPermissionTree(permissions, 0)
+
+	columns := []file.ColumnConfig{
+		{Title: "ID", Field: "ID", Width: 20},
+		{Title: "权限名称", Field: "Name", Width: 20, Prefix: "-->"},
+		{Title: "权限类型", Field: "Type", Width: 20},
+		{Title: "路由路径", Field: "Path", Width: 20},
+		{Title: "权限码", Field: "Code", Width: 20},
+		{Title: "组件名称", Field: "Component", Width: 20},
+		{Title: "图标", Field: "Icon", Width: 20},
+		{Title: "排序", Field: "Sort", Width: 20},
+		{Title: "状态", Field: "Status", Width: 20},
+		{Title: "父级ID", Field: "ParentID", Width: 20},
+		{Title: "备注", Field: "Remark", Width: 20},
+	}
+
+	err := file.ExportExcel(c, permissionTree, columns, "权限列表", file.Options{})
+	if err != nil {
+		return fmt.Errorf("生成excel并返回字节流失败: %w", err)
 	}
 
 	return nil

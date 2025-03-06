@@ -14,5 +14,6 @@ func ResigterPermissionRouter(g *gin.RouterGroup) {
 		group.POST("", handler.CreatePermission)
 		group.PATCH("/:id", handler.PatchPermission)
 		group.DELETE("/:id", handler.DeletePermission)
+		group.GET("/export", handler.ExportPermission)
 	}
 }

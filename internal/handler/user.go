@@ -20,7 +20,7 @@ func GetUserList(c *gin.Context) {
 		return
 	}
 
-	response.SuccessWithPagination(c, users, pagination, "用户列表获取成功")
+	response.Success(c, users, pagination, "用户列表获取成功")
 }
 
 // GetUser 获取用户信息
@@ -39,7 +39,7 @@ func GetUser(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, user, "获取成功")
+	response.Success(c, user, nil, "获取成功")
 }
 
 // CreateUser 创建用户
@@ -59,7 +59,7 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, nil, "创建成功")
+	response.Success(c, nil, nil, "创建成功")
 }
 
 // PatchUser 更新部分用户信息
@@ -82,7 +82,7 @@ func PatchUser(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, nil, "更新成功")
+	response.Success(c, nil, nil, "更新成功")
 }
 
 // DeleteUser 删除用户
@@ -100,7 +100,7 @@ func DeleteUser(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, nil, "删除成功")
+	response.Success(c, nil, nil, "删除成功")
 }
 
 // GetCurrentUserInfo 获取当前用户信息
@@ -114,7 +114,7 @@ func GetCurrentUserInfo(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, user, "获取成功")
+	response.Success(c, user, nil, "获取成功")
 }
 
 // UpdateUserPassword 修改密码
@@ -137,5 +137,5 @@ func UpdateUserPassword(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, nil, "修改密码成功")
+	response.Success(c, nil, nil, "修改密码成功")
 }

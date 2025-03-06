@@ -39,7 +39,7 @@ func GetPermission(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, permission, "获取成功")
+	response.Success(c, permission, nil, "获取成功")
 }
 
 // CreatePermission 创建菜单
@@ -59,7 +59,7 @@ func CreatePermission(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, nil, "创建成功")
+	response.Success(c, nil, nil, "创建成功")
 }
 
 // PatchPermission 更新部分菜单信息
@@ -82,7 +82,7 @@ func PatchPermission(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, nil, "更新成功")
+	response.Success(c, nil, nil, "更新成功")
 }
 
 // DeletePermission 删除菜单
@@ -100,5 +100,17 @@ func DeletePermission(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, nil, "删除成功")
+	response.Success(c, nil, nil, "删除成功")
+}
+
+// ExportPermission 导出菜单
+func ExportPermission(c *gin.Context) {
+	// 导出菜单
+	var service service.PermissionService
+	err := service.ExportPermission(c)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, "导出菜单失败", err)
+		return
+	}
+
 }

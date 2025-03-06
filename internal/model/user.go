@@ -6,13 +6,13 @@ import (
 
 // User 用户模型 -- 查询 只用于查询
 type User struct {
-	Username  *string      `json:"username"`
+	Username  *string      `json:"username,omitempty"`
 	Password  *string      `json:"-"` // 不返回给前端, 但是也不从前端接收了
-	Nickname  *string      `json:"nickname"`
-	Email     *string      `json:"email"`
-	Phone     *string      `json:"phone"`
-	Status    types.Status `json:"status"`
-	RoleID    uint         `json:"roleId"`
+	Nickname  *string      `json:"nickname,omitempty"`
+	Email     *string      `json:"email,omitempty"`
+	Phone     *string      `json:"phone,omitempty"`
+	Status    types.Status `json:"status,omitempty"`
+	RoleID    uint         `json:"roleId,omitempty"`
 	BaseModel              // 嵌入基础模型
 }
 
@@ -45,6 +45,11 @@ type UpdatePasswordRequest struct {
 	NewPassword     *string `json:"newPassword" binding:"omitempty"`
 	PasswordConfirm *string `json:"passwordConfirm" binding:"omitempty"`
 	BaseModel               // 嵌入基础模型
+}
+
+// SimpleQueryFields 简单查询器
+func (u *User) SimpleQueryFields() []string {
+	return []string{"id", "username"}
 }
 
 // TableName 自定义表名

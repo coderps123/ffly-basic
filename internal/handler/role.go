@@ -20,7 +20,7 @@ func GetRoleList(c *gin.Context) {
 		return
 	}
 
-	response.SuccessWithPagination(c, roles, pagination, "角色列表获取成功")
+	response.Success(c, roles, pagination, "角色列表获取成功")
 }
 
 // GetRole 获取角色详情
@@ -39,7 +39,7 @@ func GetRole(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, roleInfo, "角色获取成功")
+	response.Success(c, roleInfo, nil, "角色获取成功")
 }
 
 // CreateRole 创建角色
@@ -57,7 +57,7 @@ func CreateRole(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, nil, "角色创建成功")
+	response.Success(c, nil, nil, "角色创建成功")
 }
 
 // PatchRole 部分更新角色
@@ -81,7 +81,7 @@ func PatchRole(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, nil, "角色更新成功")
+	response.Success(c, nil, nil, "角色更新成功")
 }
 
 // DeleteRole 删除角色
@@ -99,7 +99,7 @@ func DeleteRole(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, nil, "角色删除成功")
+	response.Success(c, nil, nil, "角色删除成功")
 }
 
 // PatchRolePermissions 更新角色权限
@@ -122,5 +122,5 @@ func PatchRolePermissions(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, nil, "角色权限更新成功")
+	response.Success(c, nil, nil, "角色权限更新成功")
 }

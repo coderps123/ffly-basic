@@ -22,7 +22,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, token, "登录成功")
+	response.Success(c, token, nil, "登录成功")
 }
 
 func Register(c *gin.Context) {
@@ -39,5 +39,5 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, nil, "注册成功")
+	response.Success(c, nil, nil, "注册成功")
 }
