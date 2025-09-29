@@ -12,7 +12,7 @@ type User struct {
 	Email     *string      `json:"email,omitempty"`
 	Phone     *string      `json:"phone,omitempty"`
 	Status    types.Status `json:"status,omitempty"`
-	RoleID    uint         `json:"roleId,omitempty"`
+	Roles     []*Role      `json:"roles" binding:"omitempty" gorm:"-"` //  不存储在数据库中
 	BaseModel              // 嵌入基础模型
 }
 
@@ -24,7 +24,7 @@ type UserCreateRequest struct {
 	Email     *string      `json:"email" binding:"omitempty,email"`
 	Phone     *string      `json:"phone" binding:"omitempty"`
 	Status    types.Status `json:"status" gorm:"default:1" binding:"omitempty,oneof=1 2"` // 使用指针以区分是否需要更新
-	RoleID    *uint        `json:"roleId"`
+	RoleIDs   []uint       `json:"roleIds" binding:"omitempty" gorm:"-"`
 	BaseModel              // 嵌入基础模型
 }
 
@@ -35,7 +35,7 @@ type UserPatchRequest struct {
 	Email     *string      `json:"email" binding:"omitempty,email"`
 	Phone     *string      `json:"phone" binding:"omitempty"`
 	Status    types.Status `json:"status" binding:"omitempty,oneof=1 2"` // 使用指针以区分是否需要更新
-	RoleID    *uint        `json:"roleId" binding:"omitempty"`
+	RoleIDs   []uint       `json:"roleIds" binding:"omitempty" gorm:"-"`
 	BaseModel              // 嵌入基础模型
 }
 

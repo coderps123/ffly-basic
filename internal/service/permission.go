@@ -76,8 +76,29 @@ func (service *PermissionService) GetPermissionByID(id uint) (*model.Permission,
 
 // CreatePermission 创建菜单
 func (service *PermissionService) CreatePermission(permissionCreatedRequest *model.PermissionCreatedRequest) error {
-	// 状态验证是自动的，通过 UnmarshalJSON 实现
-	if err := db.DB.MySQL.Model(&model.Permission{}).Create(permissionCreatedRequest).Error; err != nil {
+	// 将请求数据转换为Permission模型
+	permission := &model.Permission{
+		Title:     permissionCreatedRequest.Title,
+		Name:      permissionCreatedRequest.Name,
+		Path:      permissionCreatedRequest.Path,
+		Component: permissionCreatedRequest.Component,
+		Redirect:  permissionCreatedRequest.Redirect,
+		Visible:   permissionCreatedRequest.Visible,
+		Icon:      permissionCreatedRequest.Icon,
+		Sort:      permissionCreatedRequest.Sort,
+		ParentID:  permissionCreatedRequest.ParentID,
+		Remark:    permissionCreatedRequest.Remark,
+		Buttons:   permissionCreatedRequest.Buttons,
+		Params:    permissionCreatedRequest.Params,
+		Status:    permissionCreatedRequest.Status,
+		BaseModel: permissionCreatedRequest.BaseModel,
+	}
+
+	if permission.Status == 0 {
+		permission.Status = 1
+	}
+
+	if err := db.DB.MySQL.Create(permission).Error; err != nil {
 		return fmt.Errorf("创建权限失败: %w", err)
 	}
 	return nil
@@ -87,6 +108,38 @@ func (service *PermissionService) CreatePermission(permissionCreatedRequest *mod
 func (service *PermissionService) DeletePermission(id uint) error {
 	if err := db.DB.MySQL.Delete(&model.Permission{}, id).Error; err != nil {
 		return fmt.Errorf("删除权限失败: %w", err)
+	}
+
+	return nil
+}
+
+// PutPermission 全量更新菜单
+func (service *PermissionService) PutPermission(id uint, permissionCreatedRequest *model.PermissionCreatedRequest) error {
+	// 将请求数据转换为Permission模型
+	permission := &model.Permission{
+		Title:     permissionCreatedRequest.Title,
+		Name:      permissionCreatedRequest.Name,
+		Path:      permissionCreatedRequest.Path,
+		Component: permissionCreatedRequest.Component,
+		Redirect:  permissionCreatedRequest.Redirect,
+		Visible:   permissionCreatedRequest.Visible,
+		Icon:      permissionCreatedRequest.Icon,
+		Sort:      permissionCreatedRequest.Sort,
+		ParentID:  permissionCreatedRequest.ParentID,
+		Remark:    permissionCreatedRequest.Remark,
+		Buttons:   permissionCreatedRequest.Buttons,
+		Params:    permissionCreatedRequest.Params,
+		Status:    permissionCreatedRequest.Status,
+		BaseModel: permissionCreatedRequest.BaseModel,
+	}
+
+	if permission.Status == 0 {
+		permission.Status = 1
+	}
+
+	// 全量更新，使用 Save 方法
+	if err := db.DB.MySQL.Model(&model.Permission{}).Where("id = ?", id).Save(permission).Error; err != nil {
+		return fmt.Errorf("更新菜单失败: %w", err)
 	}
 
 	return nil
@@ -117,9 +170,9 @@ func (service *PermissionService) ExportPermission(c *gin.Context) error {
 	columns := []file.ColumnConfig{
 		{Title: "ID", Field: "ID", Width: 20},
 		{Title: "权限名称", Field: "Name", Width: 20, Prefix: "-->"},
-		{Title: "权限类型", Field: "Type", Width: 20},
+		// {Title: "权限类型", Field: "Type", Width: 20},
 		{Title: "路由路径", Field: "Path", Width: 20},
-		{Title: "权限码", Field: "Code", Width: 20},
+		// {Title: "权限码", Field: "Code", Width: 20},
 		{Title: "组件名称", Field: "Component", Width: 20},
 		{Title: "图标", Field: "Icon", Width: 20},
 		{Title: "排序", Field: "Sort", Width: 20},

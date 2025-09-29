@@ -16,10 +16,41 @@ type UserService struct{}
 
 // GetUserList 获取用户列表
 func (service *UserService) GetUserList(c *gin.Context) ([]*model.User, *query.Pagination, error) {
+	// 开启事务
+	tx := db.DB.MySQL.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback() // 回滚事务
+		}
+	}()
 
 	users, pagination, err := query.GetQueryData[model.User](db.DB.MySQL, c)
 	if err != nil {
+		tx.Rollback() // 回滚事务
 		return nil, nil, err
+	}
+
+	// 为每个用户填充角色信息
+	var userRoleService UserRoleService
+	for _, user := range *users {
+		userRoles, err := userRoleService.GetRolesByUserID(db.DB.MySQL, user.ID)
+		if err != nil {
+			tx.Rollback() // 回滚事务
+			return nil, nil, fmt.Errorf("获取用户角色失败: %w", err)
+		}
+		// 获取 roleIds
+		var roleIds []uint
+		for _, userRole := range userRoles {
+			roleIds = append(roleIds, userRole.RoleID)
+		}
+		// 获取角色信息
+		var roles []*model.Role
+		if err := db.DB.MySQL.Model(&model.Role{}).Where("id in (?)", roleIds).Find(&roles).Error; err != nil {
+			tx.Rollback() // 回滚事务
+			return nil, nil, fmt.Errorf("获取角色信息失败: %w", err)
+		}
+		// 填充角色信息
+		user.Roles = roles
 	}
 
 	return *users, pagination, nil
@@ -27,13 +58,44 @@ func (service *UserService) GetUserList(c *gin.Context) ([]*model.User, *query.P
 
 // GetUserByID 根据 ID 获取用户信息
 func (service *UserService) GetUserByID(id uint) (*model.User, error) {
+	// 开启事务
+	tx := db.DB.MySQL.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback() // 回滚事务
+		}
+	}()
+
 	user := &model.User{}
 	if err := db.DB.MySQL.First(user, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
+			tx.Rollback() // 回滚事务
 			return nil, fmt.Errorf("用户不存在")
 		}
 		return nil, err
 	}
+
+	// 用户填充角色信息
+	var userRoleService UserRoleService
+	userRoles, err := userRoleService.GetRolesByUserID(db.DB.MySQL, user.ID)
+	if err != nil {
+		tx.Rollback() // 回滚事务
+		return nil, fmt.Errorf("获取用户角色失败: %w", err)
+	}
+	// 获取 roleIds
+	var roleIds []uint
+	for _, userRole := range userRoles {
+		roleIds = append(roleIds, userRole.RoleID)
+	}
+	// 获取角色信息
+	var roles []*model.Role
+	if err := db.DB.MySQL.Model(&model.Role{}).Where("id in (?)", roleIds).Find(&roles).Error; err != nil {
+		tx.Rollback() // 回滚事务
+		return nil, fmt.Errorf("获取角色信息失败: %w", err)
+	}
+	// 填充角色信息
+	user.Roles = roles
+
 	return user, nil
 }
 
@@ -65,26 +127,33 @@ func (service *UserService) CreateUser(userCreateRequest *model.UserCreateReques
 	}
 	userCreateRequest.Password = &hashedPassword
 
-	// 处理 RoleID, 确保不为 nil
-	var roleID uint
-	if userCreateRequest.RoleID != nil {
-		roleID = *userCreateRequest.RoleID
+	// 将请求数据转换为User模型
+	user := &model.User{
+		Username:  userCreateRequest.Username,
+		Password:  userCreateRequest.Password,
+		Nickname:  userCreateRequest.Nickname,
+		Email:     userCreateRequest.Email,
+		Phone:     userCreateRequest.Phone,
+		Status:    userCreateRequest.Status,
+		BaseModel: userCreateRequest.BaseModel,
 	}
-	userCreateRequest.RoleID = &roleID
-
-	fmt.Print(userCreateRequest)
 
 	// 创建用户
-	if err := tx.Model(&model.User{}).Create(userCreateRequest).Error; err != nil {
+	if err := tx.Create(user).Error; err != nil {
 		tx.Rollback() // 回滚事务
 		return err
 	}
 
-	// 创建用户角色关联
-	var userRoleService UserRoleService
-	if err := userRoleService.SaveUserRole(tx, userCreateRequest.ID, *userCreateRequest.RoleID); err != nil {
-		tx.Rollback() // 回滚事务
-		return err
+	// 设置创建后的ID
+	userCreateRequest.ID = user.ID
+
+	// 创建用户角色关联（支持多个角色）
+	if len(userCreateRequest.RoleIDs) > 0 {
+		var userRoleService UserRoleService
+		if err := userRoleService.SaveUserRoles(tx, user.ID, userCreateRequest.RoleIDs); err != nil {
+			tx.Rollback() // 回滚事务
+			return err
+		}
 	}
 
 	// 提交事务
@@ -145,21 +214,21 @@ func (service *UserService) PatchUser(id uint, userPatchRequest *model.UserPatch
 		return fmt.Errorf("手机号不合规")
 	}
 
+	// 更新用户角色关联，
+	if len(userPatchRequest.RoleIDs) > 0 {
+		// 多个的话，
+		var userRoleService UserRoleService
+		if err := userRoleService.SaveUserRoles(tx, id, userPatchRequest.RoleIDs); err != nil {
+			tx.Rollback() // 回滚事务
+			return err
+		}
+	}
+
 	// 更新用户信息
 	result := tx.Model(&model.User{}).Where("id = ?", id).Updates(userPatchRequest)
 	if result.Error != nil {
 		tx.Rollback() // 回滚事务
 		return result.Error
-	}
-
-	// 如果用户传入 roleID
-	if userPatchRequest.RoleID != nil {
-		// 更新用户角色关联，
-		var userRoleService UserRoleService
-		if err := userRoleService.SaveUserRole(tx, id, *userPatchRequest.RoleID); err != nil {
-			tx.Rollback() // 回滚事务
-			return err
-		}
 	}
 
 	// 提交事务

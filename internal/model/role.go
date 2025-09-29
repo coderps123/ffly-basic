@@ -6,10 +6,11 @@ import (
 
 // Role 角色模型 -- 只用于查询
 type Role struct {
-	Name   string       `json:"name"`
-	Code   string       `json:"code"`
-	Remark string       `json:"remark"`
-	Status types.Status `json:"status"`
+	Name          string       `json:"name"`
+	Code          string       `json:"code"`
+	Remark        string       `json:"remark"`
+	Status        types.Status `json:"status"`
+	PermissionIDs []uint       `json:"permissionIds,omitempty" gorm:"-"` // 权限ID列表，不存储在数据库中
 	BaseModel
 }
 

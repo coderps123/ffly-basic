@@ -36,10 +36,16 @@ func Auth() gin.HandlerFunc {
 			return
 		}
 
-		// 将当前请求的 userID 信息保存到请求的上下文中
+		// 验证是否为 Access Token
+		if claims.TokenType != "access" {
+			response.Error(c, http.StatusUnauthorized, "Token 类型错误，需要 Access Token", nil)
+			c.Abort()
+			return
+		}
+
+		// 将当前请求的用户信息保存到请求的上下文中
 		c.Set("userID", claims.UserID)
 		c.Set("username", claims.Username)
-		c.Set("roleID", claims.RoleID)
 		c.Next()
 	}
 }

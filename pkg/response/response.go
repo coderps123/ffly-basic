@@ -8,6 +8,7 @@ import (
 )
 
 type Response struct {
+	Success bool   `json:"success"`
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 	Data    any    `json:"data"`
@@ -31,6 +32,7 @@ func Success(c *gin.Context, data any, p *query.Pagination, message string) {
 	}
 
 	c.JSON(http.StatusOK, Response{
+		Success: true,
 		Code:    http.StatusOK,
 		Message: message,
 		Data:    data,
@@ -42,6 +44,7 @@ func Error(c *gin.Context, httpCode int, message string, err error) {
 		message = err.Error()
 	}
 	c.JSON(httpCode, Response{
+		Success: false,
 		Code:    httpCode,
 		Message: message,
 		Data:    nil,
@@ -60,6 +63,7 @@ func SuccessWithPagination(c *gin.Context, data any, p *query.Pagination, messag
 		Size:  p.Size,
 	}
 	c.JSON(http.StatusOK, Response{
+		Success: true,
 		Code:    http.StatusOK,
 		Message: message,
 		Data:    dataResult,

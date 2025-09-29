@@ -20,7 +20,6 @@ create table if not exists `users` (
   `email` varchar(100) default null comment '邮箱',
   `phone` varchar(20) default null comment '手机号',
   `status` tinyint unsigned not null default '1' comment '状态 1: 启用 2: 禁用',
-  `role_id` bigint unsigned not null default '0' comment '角色id',
   `created_at` timestamp not null default current_timestamp comment '创建时间',
   `updated_at` timestamp not null default current_timestamp on update current_timestamp comment '更新时间',
   `deleted_at` timestamp null default null comment '删除时间',
@@ -29,7 +28,6 @@ create table if not exists `users` (
   unique key `uk_email` (`email`), -- 唯一索引 email
   unique key `uk_phone` (`phone`), -- 唯一索引 phone
   unique key `uk_username_email_phone` (`username`, `email`, `phone`), -- 联合唯一索引 username, email, phone
-  key `idx_role_id` (`role_id`), -- 索引 role_id
   key `idx_deleted_at` (`deleted_at`) -- 索引 deleted_at
 ) engine=innodb auto_increment=1 comment='用户表';
 
@@ -71,28 +69,33 @@ create table if not exists `user_roles` (
 -- 创建权限表
 create table if not exists `permissions` (
   `id` bigint unsigned not null auto_increment comment '权限id',
-  `name` varchar(50) not null comment '权限名称',
-  `type` enum('menu', 'button') not null comment '权限类型, menu: 菜单, button: 按钮',
+  `title` varchar(50) not null comment '权限标题',
+  `name` varchar(50) not null comment '路由名称',
+  -- `type` enum('menu', 'button') not null comment '权限类型, menu: 菜单, button: 按钮',
   `path` varchar(255) default null comment '菜单路径',
-  `code` varchar(50) default null comment '权限代码', -- 按钮权限的标识符
+  -- `code` varchar(50) default null comment '权限代码', -- 按钮权限的标识符
   `component` varchar(255) default null comment '组件路径', -- 菜单权限的组件
+  `redirect` varchar(100) default null comment '重定向路径', -- 菜单权限的重定向路径
   `icon` varchar(255) default null comment '菜单图标',
   `sort` int not null default '0' comment '排序',
   `parent_id` bigint unsigned not null default '0' comment '父权限id',
+  `visible` boolean NOT NULL DEFAULT TRUE COMMENT '是否可见 true: 可见 false: 不可见',
   `status` tinyint unsigned not null default '1' comment '状态 1: 启用 2: 禁用',
+  `buttons` varchar(255) default null comment '按钮权限',
+  `params` varchar(255) default null comment '路由参数',
   `remark` varchar(255) default null comment '备注',
   `created_at` timestamp not null default current_timestamp comment '创建时间',
   `updated_at` timestamp not null default current_timestamp on update current_timestamp comment '更新时间',
   `deleted_at` timestamp null default null comment '删除时间',
   primary key (`id`), -- 主键
   unique key `uk_path` (`path`), -- 唯一索引 path
-  unique key `uk_code` (`code`), -- 唯一索引 code
+  -- unique key `uk_code` (`code`), -- 唯一索引 code
   key `idx_parent_id` (`parent_id`), -- 索引 parent_id
-  key `idx_deleted_at` (`deleted_at`), -- 索引 deleted_at
-  constraint `chk_type_path_code` check ( -- 约束 type, path, code 
-    (type = 'menu' and path is not null and code is null) or 
-    (type = 'button' and path is null and code is not null)
-  )
+  key `idx_deleted_at` (`deleted_at`) -- 索引 deleted_at
+  -- constraint `chk_type_path_code` check ( -- 约束 type, path, code 
+  --   (type = 'menu' and path is not null and code is null) or 
+  --   (type = 'button' and path is null and code is not null)
+  -- )
 ) engine=innodb auto_increment=1 comment='权限表';
 
 -- 创建角色权限关联表

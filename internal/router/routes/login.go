@@ -12,4 +12,6 @@ func ResigterLoginRouter(group *gin.RouterGroup) {
 	group.POST("/register", handler.Register)
 	// 用户登录
 	group.POST("/login", handler.Login)
+	// 刷新 Token
+	group.POST("/refresh", handler.RefreshToken)
 }

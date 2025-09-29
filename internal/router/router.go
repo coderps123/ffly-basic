@@ -45,3 +45,8 @@ func InitRouter() {
 
 	r.Run(fmt.Sprintf(":%d", config.GlobalConfig.App.Port)) // 监听端口
 }
+
+func Init() {
+	// 初始化路由
+	InitRouter()
+}

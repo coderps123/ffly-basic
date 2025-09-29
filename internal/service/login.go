@@ -14,7 +14,7 @@ import (
 
 type LoginService struct {
 	Username string `json:"username" binding:"required,min=2,max=20"`
-	Password string `json:"password" binding:"required,min=6,max=20"`
+	Password string `json:"password" binding:"required,min=6,max=255"`
 }
 
 // LoginLimiter 用户登录限流（一分钟内最多登录5次）
@@ -41,14 +41,14 @@ func LoginLimiter(loginService *LoginService) (bool, error) {
 	return false, nil
 }
 
-func (service *LoginService) Login() (string, error) {
+func (service *LoginService) Login() (*auth.TokenPair, error) {
 	// 用户登录限流
 	isLimit, err := LoginLimiter(service)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if isLimit {
-		return "", err
+		return nil, err
 	}
 
 	// 检查用户名是否存在
@@ -57,29 +57,29 @@ func (service *LoginService) Login() (string, error) {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// gorm.ErrRecordNotFound 是 gorm 的一个错误类型，表示没有找到记录
 			// Is 用于判断错误是否为 gorm.ErrRecordNotFound
-			return "", errors.New("用户名不存在")
+			return nil, errors.New("用户名不存在")
 		}
-		return "", err
+		return nil, err
 	}
 
 	// 验证密码
 	if !utils.CheckPassword(*user.Password, service.Password) {
-		return "", errors.New("密码错误")
+		return nil, errors.New("密码错误")
 	}
 
-	// 生成 token
-	token, err := auth.GenerateToken(user.ID, *user.Username, user.RoleID)
+	// 生成 Token 对（Access Token + Refresh Token）
+	tokenPair, err := auth.GenerateTokenPair(user.ID, *user.Username)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return token, nil
+	return tokenPair, nil
 }
 
 type RegisterService struct {
 	Username        *string `json:"username" binding:"required,min=2,max=20"`
-	Password        *string `json:"password" binding:"required,min=6,max=20"`
-	ConfirmPassword *string `json:"confirmPassword" binding:"required,min=6,max=20"`
+	Password        *string `json:"password" binding:"required,min=6,max=255"`
+	ConfirmPassword *string `json:"confirmPassword" binding:"required,min=6,max=255"`
 	Nickname        *string `json:"nickname"`
 	Email           *string `json:"email" binding:"omitempty,email"` // omitempty 允许为空
 	Phone           *string `json:"phone" binding:"omitempty,e164"`  // omitempty 允许为空

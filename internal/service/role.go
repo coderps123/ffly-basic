@@ -19,6 +19,16 @@ func (service *RoleService) GetRoleList(c *gin.Context) ([]*model.Role, *query.P
 		return nil, nil, err
 	}
 
+	// 为每个角色填充权限IDs
+	var rolePermissionService RolePermissionService
+	for _, role := range *roles {
+		permissionIDs, err := rolePermissionService.GetRolePermissionIds(db.DB.MySQL, role.ID)
+		if err != nil {
+			return nil, nil, fmt.Errorf("获取角色权限失败: %w", err)
+		}
+		role.PermissionIDs = permissionIDs
+	}
+
 	return *roles, pagination, nil
 }
 
@@ -28,12 +38,30 @@ func (service *RoleService) GetRoleByID(id uint) (*model.Role, error) {
 	if err := db.DB.MySQL.First(&role, id).Error; err != nil {
 		return nil, fmt.Errorf("获取角色失败: %w", err)
 	}
+
+	// 填充权限IDs
+	var rolePermissionService RolePermissionService
+	permissionIDs, err := rolePermissionService.GetRolePermissionIds(db.DB.MySQL, role.ID)
+	if err != nil {
+		return nil, fmt.Errorf("获取角色权限失败: %w", err)
+	}
+	role.PermissionIDs = permissionIDs
+
 	return &role, nil
 }
 
 // CreateRole 创建角色
 func (service *RoleService) CreateRole(roleCreateRequest *model.RoleCreateRequest) error {
-	if err := db.DB.MySQL.Model(&model.Role{}).Create(roleCreateRequest).Error; err != nil {
+	// 将请求数据转换为Role模型
+	role := &model.Role{
+		Name:      *roleCreateRequest.Name,
+		Code:      *roleCreateRequest.Code,
+		Remark:    *roleCreateRequest.Remark,
+		Status:    roleCreateRequest.Status,
+		BaseModel: roleCreateRequest.BaseModel,
+	}
+
+	if err := db.DB.MySQL.Create(role).Error; err != nil {
 		return fmt.Errorf("创建角色失败: %w", err)
 	}
 	return nil

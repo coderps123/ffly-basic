@@ -31,8 +31,8 @@ func (service *RolePermissionService) SaveRolePermission(tx *gorm.DB, id uint, p
 		return fmt.Errorf("权限ID列表中存在不存在的权限ID")
 	}
 
-	// 删除该角色的所有权限
-	if err := tx.Where("role_id = ?", id).Delete(&model.RolePermission{}).Error; err != nil {
+	// 删除该角色的所有权限 需要硬删除
+	if err := tx.Where("role_id = ?", id).Unscoped().Delete(&model.RolePermission{}).Error; err != nil {
 		return fmt.Errorf("删除角色权限关联失败: %w", err)
 	}
 
@@ -49,4 +49,20 @@ func (service *RolePermissionService) SaveRolePermission(tx *gorm.DB, id uint, p
 	}
 
 	return nil
+}
+
+// GetRolePermissions 根据角色ID获取权限ids
+func (service *RolePermissionService) GetRolePermissionIds(tx *gorm.DB, roleID uint) ([]uint, error) {
+	var rolePermissions []model.RolePermission
+
+	if err := tx.Model(&model.RolePermission{}).Where("role_id = ?", roleID).Find(&rolePermissions).Error; err != nil {
+		return nil, fmt.Errorf("查询角色权限失败: %w", err)
+	}
+
+	rolePermissionsIDs := make([]uint, 0, len(rolePermissions))
+	for _, rolePermission := range rolePermissions {
+		rolePermissionsIDs = append(rolePermissionsIDs, rolePermission.PermissionID)
+	}
+
+	return rolePermissionsIDs, nil
 }
